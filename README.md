@@ -2,13 +2,12 @@
 
 App to play or train chess with yourself, your friends or against IAs
 
-All the rules of the chess are successfully implemented but with bad code style, the project needs a face lift (some years ago since I did this project but I am emotionally attached to it). Bear in mind the moves hasn't been optimized to have fast computational performance, neither the basic IAs implemented, but I think this project is fun to use and may be useful for someone. The default IA implemented prioritize moves in this order:
-- 1. Moves that checks the enemy king
-- 2. Moves that captures an enemy piece
+All the rules of the chess are successfully implemented but with bad code style, the project needs a face lift (some years ago since I did this project but I am emotionally attached to it). Bear in mind that the moves and the basic IAs implemented hasn't been optimized to have fast computational performance, but I think this project is fun to use and may be useful for someone. The default IA implemented prioritize moves in this order:
+1. Moves that checks the enemy king
+2. Moves that captures an enemy piece
 
 I really encourage you to play and if you like, code your own IAs!
 
-Solarized dark             |  Solarized Ocean
 :-------------------------:|:-------------------------:
 ![Board Image](/assets/board.png) | ![Check Image](/assets/check.png) 
 
