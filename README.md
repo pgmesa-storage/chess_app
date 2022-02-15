@@ -8,7 +8,7 @@ All the rules of the chess are successfully implemented but with bad code style,
 
 I really encourage you to play and if you like, code your own IAs!
 
-![Board Image](/assets/board.png | ![Check Image](/assets/check.png) 
+![Board Image](/assets/board.png) | ![Check Image](/assets/check.png) 
 
 ## How to execute
 
