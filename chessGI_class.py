@@ -34,10 +34,10 @@ class ChessGI:
         self.__adjustBoardOnScreen()
          # ------Sound effects loads-----
         pygame.mixer.init() 
-        self.move_sound = pygame.mixer.Sound("Efectos_de_Sonido\move_sound.wav")
-        self.move_sound = pygame.mixer.Sound("Efectos_de_Sonido\move_sound.wav")
-        self.capture_sound = pygame.mixer.Sound("Efectos_de_Sonido\capture.wav")
-        self.castling_sound = pygame.mixer.Sound("Efectos_de_Sonido\castling_sound.wav")
+        self.move_sound = pygame.mixer.Sound("sound_effects\move_sound.wav")
+        self.move_sound = pygame.mixer.Sound("sound_effects\move_sound.wav")
+        self.capture_sound = pygame.mixer.Sound("sound_effects\capture.wav")
+        self.castling_sound = pygame.mixer.Sound("sound_effects\castling_sound.wav")
 
     def reset(self):
         self.indecesOfAvailableMovements = []
@@ -92,7 +92,7 @@ class ChessGI:
         for i in range(2):
             for name in names:
                 # C:\\Users\pablo\Desktop\Pablo\Proyectos Python\
-                root = "sprites_Ajedrez_(paint3D)/"
+                root = "chess_sprites/"
                 # root = absPath + "Chess_byPGM\sprites_Ajedrez (paint 3D)/"
                 root += color + "_" + name
                 root += "_sticker.png"
