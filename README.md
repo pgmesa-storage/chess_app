@@ -8,6 +8,7 @@ All the rules of the chess are successfully implemented but with bad code style,
 
 I really encourage you to play and if you like, code your own IAs!
 
+In game board image            |  Enemy king in check
 :-------------------------:|:-------------------------:
 ![Board Image](/assets/board.png) | ![Check Image](/assets/check.png) 
 
