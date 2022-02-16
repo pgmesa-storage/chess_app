@@ -14,7 +14,7 @@ In game board image            |  Enemy king in check
 ## How to execute
 
 #### Option 1 (Install from .exe)
-Run the .exe if you are in windows and install the program (the .exe version will not work with online mode because the local ip of the host can't be modified). Also, this .exe version is a little bit older than this github project, but just a few changes that are not important if you just want to play.
+Run the .exe if you are in windows and install the program (the .exe version will not work with online mode because the local ip of the host can't be modified). Also, this .exe version is a little bit older than this github project, but just differs in a few changes that are not important if you just want to play.
 #### Option 2 (Use Python)
 First install external dependencies with
 ```
