@@ -1,14 +1,11 @@
 
-from chessPiece_class import ChessPiece
+from classes.chessPiece_class import ChessPiece
 import copy
 
 # -------------------------------------- CHESS MODULE --------------------------------------------
 # Modulo con funciones para realizar movimientos validos sobre un tablero de ajedrez representado
 # mediante una matriz donde cada posicion es una casilla del tablero
 # ------------------------------------------------------------------------------------------------
-
-if __name__ == "__main__":
-    pass
 
 # Realiza el movimiento de una pieza (El movimiento se realiza 100% ya que si si ha invocado a esta funcion es que el 
 # movimiento es valido) y se encarga del resto de eventos asociados al movimiento (Comprobar jaques, movimientos especiales

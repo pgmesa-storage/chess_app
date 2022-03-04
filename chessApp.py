@@ -1,15 +1,37 @@
        
-from chessModule import *
-import chessModule as chess
-from chessGI_class import ChessGI
-from chessAI_class import ChessAI
+import os
+import json
+import time
 import pygame
 import pickle
 import socket
-import time
-from random import choice
 import logging
-import threading
+from pathlib import Path
+from random import choice
+
+from chessModule import *
+from classes.chessGI_class import ChessGI
+from classes.chessAI_class import ChessAI
+
+dir_ = Path(__file__).parent.resolve()
+env_path = dir_/'.env.json'
+
+def config(key) -> any:
+    if not os.path.exists(env_path):
+        raise Exception(f"Not '.env.json' file in '{dir_}'")
+    with open(env_path, 'r') as file:
+        env_dict = json.load(file)
+    return env_dict[key]
+
+# Environment variables
+try:
+    HOST_ADDRESS = config('HOST_ADDRESS')
+    HOST_PORT = config('HOST_PORT')
+    SERVER_PASSWORD = config('SERVER_PASSWORD')
+    NAME = config('USER_NAME')
+except Exception as err:
+    print(err)
+    exit(1)
 
 pygame.init()
 # ------------- Variables globales para las funciones definidas fuera del main ---------------
@@ -123,7 +145,7 @@ def evalMove(piece, square):
         return True
     return False
 
-def waitRemainingTime (t0, seconds):
+def waitRemainingTime(t0, seconds):
     if seconds == 0: return
     tf = time.time()
     dif = tf-t0
@@ -283,7 +305,7 @@ def local_mode_2players(gi, logger):
         clock.tick(60)
 
 def online_mode(gi, logger):
-    logger.info(" Practice Mode")
+    logger.info(" Online Mode")
     gi.reset()
     END = False
     close = False
