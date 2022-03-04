@@ -340,15 +340,16 @@ def online_mode(gi, logger):
                 gi.showText("[!] Client failed to connect to the server", WHITE, GRAY, screenWidth/2, screenHeight/2,40, True)
         pygame.display.update()
     # ------ Elegir entre crear o unirse a partida
-    game = False
+    game = False; chosen = False
     while not game:
         # Actualizacion grafica
-        posGenerator = calcDisplayOfOption(2, gi.screen.get_height())
         screenWidth = gi.screen.get_width()
         screenHeight = gi.screen.get_height()
-        screen.fill(GRAY)
-        rect1 = gi.showText("Create Room", REAL_BLACK,BLUE, screenWidth/2, next(posGenerator),90, True)
-        rect2 = gi.showText("Join an exisiting Room", REAL_BLACK,BLUE, screenWidth/2, next(posGenerator),90, True)
+        if not chosen:
+            screen.fill(GRAY)
+            posGenerator = calcDisplayOfOption(2, gi.screen.get_height())
+            rect1 = gi.showText("Create Room", REAL_BLACK,BLUE, screenWidth/2, next(posGenerator),90, True)
+            rect2 = gi.showText("Join an exisiting Room", REAL_BLACK,BLUE, screenWidth/2, next(posGenerator),90, True)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 client.close()
@@ -358,11 +359,16 @@ def online_mode(gi, logger):
                 configureScreen(gi,size)
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if rect1.collidepoint(pygame.mouse.get_pos()):
+                    chosen = True
                     client.set_action(0)
+                    # Wait until the room_id variable is loaded
+                    while client.room_id is None: pass
                     screen.fill(GRAY)
-                    gi.showText("Waiting for a player to join the room...",
+                    gi.showText(f"Waiting for a player to join the room... (ID: '{client.room_id}')",
                             WHITE, GRAY, screenWidth/2, screenHeight/2 , 40, True)
                 elif rect2.collidepoint(pygame.mouse.get_pos()):
+                    chosen = True
+                    client.set_action(1)
                     # Input del ID
                     screen.fill(GRAY)
                     ...

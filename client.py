@@ -97,7 +97,7 @@ class ChessClient(Thread):
         # Send password
         try:
             self.send(self.password.encode())
-            login_outcome = int(self.recive().decode())
+            login_outcome = int(self.recv().decode())
             if login_outcome == FAIL:
                 print("[!] Seems that the password is incorrect, conexion refused")
                 return
@@ -134,16 +134,16 @@ class ChessClient(Thread):
                 return False
             
             if connection_outcome == SUCCESS:
+                # Send the user name
+                self.send(self.name.encode())
+                # recv other client name
+                self.enemy_name = self.recv().decode()
                 # Send the public key
                 pk_dumped:bytes = serialize_pem_public_key(public_key)
                 self.send(pk_dumped)
                 # recv other client public key
                 pk_other_client_dumped = self.recv(40960)
                 pk_other_client = serialization.load_pem_public_key(pk_other_client_dumped)
-                # Send the user name
-                self.send(self.name.encode(), public_key=pk_other_client)
-                # recv other client name
-                self.enemy_name = self.recv().decode()
                 # Radomly select the teams (the one who created the room)
                 if self.action == 0:
                     self.team = choice(teams)
