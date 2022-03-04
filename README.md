@@ -1,7 +1,7 @@
 # Chess App
 App to play or train chess with yourself, your friends or against AIs. It allows to play online, creating private rooms, with anyone you want (just run the 'server.py' code into your online server, more detailed info below)
 
-All the rules of the chess are successfully implemented but with bad code style, the project needs a face lift (some years ago since I did this project but I am emotionally attached to it). Bear in mind that the moves and the basic AIs implemented hasn't been optimized to have fast computational performance. The default AI implemented prioritize moves in this order:
+All the rules of the chess are successfully implemented but with bad code style, the project needs a face lift (some years ago since I did this project but I am emotionally attached to it) (online mode is a new feature). Bear in mind that the moves and the basic AIs implemented hasn't been optimized to have fast computational performance. The default AI implemented prioritize moves in this order:
 1. Moves that checks the enemy king
 2. Moves that captures an enemy piece
 

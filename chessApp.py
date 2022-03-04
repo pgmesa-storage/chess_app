@@ -10,6 +10,7 @@ from pathlib import Path
 from random import choice
 
 from chessModule import *
+from client import FAIL, SUCCESS, ChessClient
 from classes.chessGI_class import ChessGI
 from classes.chessAI_class import ChessAI
 
@@ -41,6 +42,7 @@ pygame.init()
 GRAY = (70, 70, 70)
 REAL_BLACK = (0,0,0)
 BLUE = (0,191,255)
+WHITE = (255,255,255)
 # --- Online Game vars
 HOSTS_IP = ""
 PORT = 9999
@@ -51,7 +53,6 @@ def configureScreen(gi,size):
     screen = pygame.display.set_mode(size, pygame.RESIZABLE)
     gi.setScreen(screen)
     gi.updateBoardOnScreen()
-
 # ------------------------------------------------------------
 # ---- Funciones para mostrar texto en la interfaz grafica ---
 
@@ -68,11 +69,11 @@ def showOptions (gi):
     screenHeight = gi.screen.get_height()
     screenWidth = gi.screen.get_width()
     posGenerator = calcDisplayOfOption(5, screenHeight)
-    rect1 = gi.showText("Modo Practica", REAL_BLACK,BLUE, screenWidth/2, next(posGenerator),90, True)
-    rect2 = gi.showText("Partida 2 Jugadores (local)", REAL_BLACK,BLUE, screenWidth/2, next(posGenerator),90, True)
-    rect3 = gi.showText("Partida Online", REAL_BLACK,BLUE, screenWidth/2, next(posGenerator),90, True)
-    rect4 = gi.showText("Partida contra la IA", REAL_BLACK,BLUE, screenWidth/2, next(posGenerator),90, True)
-    rect5 = gi.showText("IA vs IA", REAL_BLACK,BLUE, screenWidth/2, next(posGenerator),90, True)
+    rect1 = gi.showText("Practice Mode", REAL_BLACK,BLUE, screenWidth/2, next(posGenerator),90, True)
+    rect2 = gi.showText("2 players (local)", REAL_BLACK,BLUE, screenWidth/2, next(posGenerator),90, True)
+    rect3 = gi.showText("Online Game", REAL_BLACK,BLUE, screenWidth/2, next(posGenerator),90, True)
+    rect4 = gi.showText("Game against AI", REAL_BLACK,BLUE, screenWidth/2, next(posGenerator),90, True)
+    rect5 = gi.showText("AI vs AI", REAL_BLACK,BLUE, screenWidth/2, next(posGenerator),90, True)
     return [rect1,rect2,rect3,rect4,rect5]
 
 def showEndText(endDueto, gi, *byColorTeam): 
@@ -110,7 +111,6 @@ def setPositionOnBoard(strpos,board,invert):
             else:
                 gi.boardMatrix[row][colum] = ChessPiece(c,(row,colum),invert)
                 colum += 1  
-    
 # ------------------------------------------------------------
 # -------- Funciones para el desarrollo de la partida --------
 
@@ -235,7 +235,7 @@ def practice_mode(gi,logger):
         clock.tick(60)
 
 def local_mode_2players(gi, logger):
-    logger.info(" Practice Mode")
+    logger.info(" 2 players (local)")
     gi.reset()
     END = False
     close = False
@@ -305,105 +305,85 @@ def local_mode_2players(gi, logger):
         clock.tick(60)
 
 def online_mode(gi, logger):
-    logger.info(" Online Mode")
+    logger.info(" Online Game")
     gi.reset()
     END = False
     close = False
     gameMoves = []
     gameStates = [[[]]]
-    teams = ["black", "white"]
     initialPos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
     myTeam = None
-    # class FreezeAvoider:
-    #     def __init__(self):
-    #         self.end = False
-    #         self.thread = threading.Thread(target=self.check())
-            
-        
-    #     def run(self):
-    #         self.thread.start()
-        
-    #     def check(self):
-    #         while not self.end:
-    #             for event in pygame.event.get():
-    #                 if event.type == pygame.QUIT: 
-    #                     pygame.quit()
-    #                 if event.type == pygame.VIDEORESIZE:
-    #                     size = (event.w, event.h)
-    #                     configureScreen(gi,size)
-        
-    #     def kill(self):
-    #         self.end = True
-            
-    # def whileWaiting(cond):
-    #     while not cond[0]:
-    #         for event in pygame.event.get():
-    #             if event.type == pygame.QUIT: 
-    #                 pygame.quit()
-    #             if event.type == pygame.VIDEORESIZE:
-    #                 size = (event.w, event.h)
-    #                 configureScreen(gi,size)
-    
+    # We try to connect to the server
+    client = ChessClient()
+    client.init(NAME, HOST_ADDRESS, HOST_PORT, SERVER_PASSWORD)
+    client.start()
+    connection_outcome = False
+    while not connection_outcome:
+        screenWidth = gi.screen.get_width()
+        screenHeight = gi.screen.get_height()
+        screen.fill(GRAY)
+        gi.showText("Connecting to the server...", WHITE, GRAY, screenWidth/2, screenHeight/2,40, True)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                client.close()
+                return
+            if event.type == pygame.VIDEORESIZE:
+                size = (event.w, event.h)
+                configureScreen(gi,size)
+        if not client.is_connected() and client.is_alive():
+            pass
+        else:
+            if client.is_connected():
+                connection_outcome = True
+            else:
+                screen.fill(GRAY)
+                gi.showText("[!] Client failed to connect to the server", WHITE, GRAY, screenWidth/2, screenHeight/2,40, True)
+        pygame.display.update()
     # ------ Elegir entre crear o unirse a partida
-    chosen = False
-    while not chosen:
+    game = False
+    while not game:
         # Actualizacion grafica
         posGenerator = calcDisplayOfOption(2, gi.screen.get_height())
-        screen.fill(GRAY)
         screenWidth = gi.screen.get_width()
-        rect1 = gi.showText("Crear partida", REAL_BLACK,BLUE, screenWidth/2, next(posGenerator),90, True)
-        rect2 = gi.showText("Unirse a partida", REAL_BLACK,BLUE, screenWidth/2, next(posGenerator),90, True)
-        pygame.display.update()
+        screenHeight = gi.screen.get_height()
+        screen.fill(GRAY)
+        rect1 = gi.showText("Create Room", REAL_BLACK,BLUE, screenWidth/2, next(posGenerator),90, True)
+        rect2 = gi.showText("Join an exisiting Room", REAL_BLACK,BLUE, screenWidth/2, next(posGenerator),90, True)
         for event in pygame.event.get():
-            if event.type == pygame.QUIT: 
+            if event.type == pygame.QUIT:
+                client.close()
                 return
             if event.type == pygame.VIDEORESIZE:
                 size = (event.w, event.h)
                 configureScreen(gi,size)
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if rect1.collidepoint(pygame.mouse.get_pos()):
-                    chosen = True
-                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    server_address = (HOSTS_IP, PORT) 
-                    sock.bind(server_address)
-                    sock.listen(1)
-                    yGenerator = calcDisplayOfOption(1, gi.screen.get_height())
+                    client.set_action(0)
                     screen.fill(GRAY)
-                    gi.showText("Servidor en marcha, esperando a que se conecte algun usuario...",
-                            REAL_BLACK,BLUE, screenWidth/2, next(yGenerator),30, True)
-                    pygame.display.update()
-                    # userFound = [False]
-                    # thread = threading.Thread(target=whileWaiting(userFound))
-                    sock, client_address = sock.accept()
-                    #userFound[0] = True
-                    logger.info(" Usuario encontrado")
-                    myTeam = choice(teams)
-                    if teams.index(myTeam) == 1:
-                        enemyTeam = teams[0]
-                    else:
-                        enemyTeam = teams[1]
-                    sock.send(enemyTeam.encode())
+                    gi.showText("Waiting for a player to join the room...",
+                            WHITE, GRAY, screenWidth/2, screenHeight/2 , 40, True)
                 elif rect2.collidepoint(pygame.mouse.get_pos()):
-                    chosen = True
-                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    server_address = (HOSTS_IP, PORT) 
-                    try:
-                        sock.connect(server_address)
-                        myTeam = sock.recv(1024).decode()
-                        if teams.index(myTeam) == 1:
-                            enemyTeam = teams[0]
-                        else:
-                            enemyTeam = teams[1]
-                    except:
-                        screen.fill(GRAY)
-                        yGenerator = calcDisplayOfOption(1,gi.screen.get_height())
-                        gi.showText(f"Fallo al unirse al servidor con direccion {server_address}, nadie escuchando",REAL_BLACK,BLUE,
-                                screenWidth/2, next(yGenerator),30, True)
-                        pygame.display.update()
-                        time.sleep(3)
-                        return
+                    # Input del ID
+                    screen.fill(GRAY)
+                    ...
+                    room_id = ...
+                    client.set_room_id(room_id)
+                    screen.fill(GRAY)
+                    gi.showText(f"Join room with id '{room_id}'...",
+                            WHITE, GRAY, screenWidth/2, screenHeight/2 , 40, True)
+            if client.game_status == SUCCESS:
+                logger.info(" Iniciando partida")
+                screen.fill(GRAY)
+                gi.showText(f"Conexion establecida con '{client.enemy_name}' - myTeam: '{client.team}'",WHITE, GRAY, screenWidth/2, screenHeight/2,40, True)
+                # game = True
+            elif client.game_status == FAIL:
+                logger.info(" [!] Fallo al iniciar la partida")
+                msg = "[!] Connection with client failed, could not start the game"
+                screen.fill(GRAY)
+                gi.showText(msg,WHITE, GRAY, screenWidth/2, screenHeight/2,40, True)
+            pygame.display.update()
+                
     # -------------------------------------
-    
     # Encapsula las actualizaciones de variables y checkeos necesarios tras realizar un movimiento
     def move(clickedSquare):
         t0 = time.time()
@@ -457,6 +437,7 @@ def online_mode(gi, logger):
             #--- Bucle principal de eventos
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: 
+                    client.close()
                     close = True
                 if event.type == pygame.VIDEORESIZE:
                     size = (event.w, event.h)
@@ -486,14 +467,12 @@ def online_mode(gi, logger):
                                 copySP = copy.deepcopy(gi.selectedPiece)
                                 copySP.square = invertMove(copySP.square)
                                 sendMove(copySP,mov,sock)
-                                END, dueTo = move(clickedSquare)
-                                                                                                                        
+                                END, dueTo = move(clickedSquare)                                                                                                              
         # Se establecen el frame rate (fps) 
         clock.tick(60)
 
-
 def playerVsIA_mode(gi, logger):
-    logger.info(" Practice Mode")
+    logger.info(" Player vs AI")
     gi.reset()
     END = False
     close = False
@@ -581,7 +560,7 @@ def playerVsIA_mode(gi, logger):
         clock.tick(60)
             
 def IAvsIA_mode(gi, logger): 
-    logger.info(" IA vs IA Mode")       
+    logger.info(" AI vs AI Mode")       
     gi.reset()
     END = False
     close = False
@@ -690,160 +669,3 @@ if __name__ == "__main__":
     # Se cierra el Juego
     logger.info(" Closing Game")
     pygame.quit()
-    
-
-
-
-
-
-
-
-
-
-        
- 
-        
-# # -------------------------------------------------------------------   
-# # -------------Inicio de la Ejecución del Programa-------------------    
-
-# logging.basicConfig(level = logging.DEBUG)
-# logger = logging.getLogger(__name__)
-
-# gi = ChessGI(screen)
-
-# logging.info(" Openning First Screen") 
-# if __name__ == "__main__": 
-#     # ----- Pantalla para elegir el modo que se va a jugar ------
-#     modeSelected = False
-#     buttons = []
-#     while not modeSelected and not close:
-#         screen.fill(GRAY)
-#         buttons = showOptions()  
-#         pygame.display.update()        
-#         clock.tick(60)
-        
-#         mouseCoords = pygame.mouse.get_pos()
-#         for event in pygame.event.get():
-#             if event.type == pygame.QUIT: 
-#                 close = True
-#             if event.type == pygame.VIDEORESIZE:
-#                 size = (event.w, event.h)
-#                 configureScreen(size)
-#             if event.type == pygame.MOUSEBUTTONDOWN:
-#                 for but in buttons:
-#                     if but.collidepoint(pygame.mouse.get_pos()):
-#                         if buttons.index(but) == 0:
-#                             logger.info(" Practice Mode")
-#                             TURNS = False
-#                         elif buttons.index(but) == 1:
-#                             logger.info(" Online Mode")
-#                             ONLINE = True
-#                         elif buttons.index(but) == 2:
-#                             logger.info(" vs IA Mode")
-#                             IA_ACTIVATED = True
-#                             teams = ["white", "black"]
-#                             computerTeam = choice(teams)
-#                             logger.debug(" Computer team = %s", computerTeam)
-#                             if computerTeam == "white":
-#                                 INVERT = True
-#                                 myTeam = "black"
-#                                 initialPos = "RNBKQBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbkqbnr"
-#                             TURNS = True
-#                         elif buttons.index(but) == 3:
-#                             logger.info(" IA vs IA Mode")
-#                             IA_ACTIVATED = True
-#                             IA2_ACTIVATED = True
-#                             SIMULATE = True
-#                         modeSelected = True   
-#     print("")
-#     logger.info(" Opening Game\n")
-#     logger.debug(initialPos + " Invert: %s  turn of " + getTurnOfTeam() +"\n", INVERT)
-#     setPositionOnBoard(initialPos,gi.boardMatrix, INVERT)
-#     if IA_ACTIVATED:
-#         ai = ChessAI(computerTeam)
-#         t = 0.5
-#     if IA2_ACTIVATED:
-#         ai2 = ChessAI("white")
-#         t = 0.2
-#     ti = time.time()
-#     while not close:
-#         # Actualizacion de tablero
-#         screen.fill(GRAY)
-#         gi.updateBoardOnScreen()
-#         if END:
-#             showEndText(dueTo,movingTeam)
-#         else:
-#             # If a piece is selected the image will follow the mouse (it's printed in the screenCoord of the mouse in every frame)
-#             if isRealPiece(gi.selectedPiece) and not END:
-#                 image = gi.getPieceImage(gi.selectedPiece.char)
-#                 mousePos = pygame.mouse.get_pos()
-#                 screen.blit(image, (mousePos[0]-gi.squareSide/2, mousePos[1]-gi.squareSide/2)) 
-#         pygame.display.update()
-        
-#         if IA_ACTIVATED and not END:          
-#             if IA2_ACTIVATED and "white" == getTurnOfTeam():
-#                 computerTeam = getTurnOfTeam()
-#                 ti = time.time()
-#                 square, piece = ai2.generate_randomMove(gi.boardMatrix)
-#                 logger.debug(f" Computer Movement: [ {piece.char} , {square} ]")
-#                 logger.debug(f" Tiempo en generar el movimiento {time.time()-ti}")
-#                 waitRemainingTime(ti,t) 
-#                 gi.eraseLastMove() 
-#                 gi.selectedPiece = piece
-#                 gi.eraseLastMove()
-#                 move(square)  
-#             if computerTeam == getTurnOfTeam():
-#                 ti = time.time()
-#                 square, piece = ai.generate_randomMove(gi.boardMatrix)
-#                 logger.debug(f" Computer Movement: [ {piece} , {square} ]")
-#                 logger.debug(f" Tiempo en generar el movimiento {time.time()-ti}")
-#                 waitRemainingTime(ti,t) 
-#                 gi.eraseLastMove() 
-#                 gi.selectedPiece = piece
-#                 gi.eraseLastMove()
-#                 move(square) 
-            
-#         #--- Bucle principal de eventos
-#         for event in pygame.event.get():
-#             if event.type == pygame.QUIT: 
-#                 close = True
-#             if event.type == pygame.VIDEORESIZE:
-#                 size = (event.w, event.h)
-#                 screenHeight = event.h
-#                 screenWidth = event.w
-#                 configureScreen(size)
-#             if event.type == pygame.MOUSEBUTTONDOWN and not END and not :
-#                 clickedSquare = gi.getSquare(pygame.mouse.get_pos())
-#                 # Miro a ver si he pinchado dentro del tablero
-#                 if clickedSquare == None: 
-#                     continue
-#                 # Si no tengo una pieza seleccionada la selecciono 
-#                 if gi.selectedPiece == None: # and getTurnOfTeam() == myteam
-#                     t0 = time.time()
-#                     gi.takePieceAt(clickedSquare)
-#                     # if not gi.selectedPiece == getTurnOfTeam() and TURNS:
-#                     #     gi.dontMoveSelectedPice()
-#                     logger.debug(" takePiece time: %f",time.time() - t0) 
-                            
-#                 # Tengo ya una pieza seleccionada, miro si como, la dejo en su sitio o la muevo a otra casilla valida
-#                 else:
-#                     if gi.selectedPiece.square == clickedSquare:
-#                         gi.dontMoveSelectedPice()
-#                     else:
-#                         if evalMove(gi.selectedPiece,clickedSquare):
-#                             logger.debug(f" {gi.selectedPiece.team} Movement: [ {gi.selectedPiece.char} , {clickedSquare} ]")
-#                             move(clickedSquare)     
-                                                                                                   
-#         # Se establecen el frame rate (fps) 
-#         clock.tick(60)
-#     # Se cierra el Juego
-#     logger.info(" Closing Game")
-#     pygame.quit()
-# # ---------------Fin de la Ejecución del Programa--------------------
-# # -------------------------------------------------------------------
-
-
-
-
-        
-
