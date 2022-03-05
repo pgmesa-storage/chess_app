@@ -455,7 +455,7 @@ def online_mode(gi, logger):
                 screen.blit(image, (mousePos[0]-gi.squareSide/2, mousePos[1]-gi.squareSide/2)) 
         
         if not myTeam == getTurnOfTeam(gameMoves) and not END:
-            gi.showText(f"Waiting '{client.enemy_team}'s response", REAL_BLACK, None, screenWidth/2, screenHeight/2, 20, False)
+            gi.showText(f"Waiting '{client.enemy_name}'s response", REAL_BLACK, None, screenWidth/2, screenHeight/2, 20, False)
             enemy_move = client.read_enemy_move()
             if enemy_move is not None:
                 gi.selectedPiece = enemy_move[0]
