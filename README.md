@@ -58,7 +58,7 @@ Make an easy test in localhost:
 To deploy the code in a server with the intention to play with someone over the internet:
 1. Clone the 'server' branch into your online server (AWS, Azure, Google Cloud...)
 ```
-git clone --branch server https://github.com/pgmesa/chess_app chess-server
+git clone --branch server https://github.com/pgmesa/chess-app chess-server
 ```
 2. Create the '.env.json' file in the same directory as the file and change the variables to fit your server (remember to open the server port you specify in the '.env.json' file before you run the program)
 3. Run the 'server.py' file
