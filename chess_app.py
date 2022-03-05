@@ -434,6 +434,8 @@ def online_mode(gi, logger):
     else:
         setPositionOnBoard(initialPos, gi.boardMatrix, False)
     while not close:
+        screenWidth = gi.screen.get_width()
+        screenHeight = gi.screen.get_height()
         if not client.connection:
             client.close()
             print("[!] The other player cancelled the game")
@@ -500,7 +502,7 @@ def online_mode(gi, logger):
         # Se establecen el frame rate (fps) 
         clock.tick(60)
 
-def playerVsIA_mode(gi, logger):
+def playerVsAI_mode(gi, logger):
     logger.info(" Player vs AI")
     gi.reset()
     END = False
@@ -588,7 +590,7 @@ def playerVsIA_mode(gi, logger):
         # Se establecen el frame rate (fps) 
         clock.tick(60)
             
-def IAvsIA_mode(gi, logger): 
+def AIvsAI_mode(gi, logger): 
     logger.info(" AI vs AI Mode")       
     gi.reset()
     END = False
@@ -691,9 +693,9 @@ if __name__ == "__main__":
                         elif buttons.index(but) == 2:
                             online_mode(gi,logger)
                         elif buttons.index(but) == 3:
-                            playerVsIA_mode(gi,logger)
+                            playerVsAI_mode(gi,logger)
                         elif buttons.index(but) == 4:
-                            IAvsIA_mode(gi,logger)
+                            AIvsAI_mode(gi,logger)
                         break
     # Se cierra el Juego
     logger.info(" Closing Game")
