@@ -1,7 +1,10 @@
-from chessModule import *
-from random import choice
-from .chessPiece_class import ChessPiece
+
 import copy
+from random import choice
+
+from chessModule import *
+from .chessPiece_class import ChessPiece
+
 
 class ChessAI:
     

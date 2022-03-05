@@ -1,7 +1,15 @@
+
+from pathlib import Path
+
 import pygame
+
 from chessModule import *
 from .chessPiece_class import ChessPiece
-import numpy as np
+
+
+dir_ = Path(__file__).parent.parent.resolve()
+sound_effects_dir = 'sound_effects'
+chess_sprites_dir = "chess_sprites"
 
 class ChessGI:
     screen = None
@@ -34,10 +42,10 @@ class ChessGI:
         self.__adjustBoardOnScreen()
          # ------Sound effects loads-----
         pygame.mixer.init() 
-        self.move_sound = pygame.mixer.Sound("sound_effects\move_sound.wav")
-        self.move_sound = pygame.mixer.Sound("sound_effects\move_sound.wav")
-        self.capture_sound = pygame.mixer.Sound("sound_effects\capture.wav")
-        self.castling_sound = pygame.mixer.Sound("sound_effects\castling_sound.wav")
+        self.move_sound = pygame.mixer.Sound(str(dir_/(sound_effects_dir+"/move_sound.wav")))
+        self.move_sound = pygame.mixer.Sound(str(dir_/(sound_effects_dir+"/move_sound.wav")))
+        self.capture_sound = pygame.mixer.Sound(str(dir_/(sound_effects_dir+"/capture.wav")))
+        self.castling_sound = pygame.mixer.Sound(str(dir_/(sound_effects_dir+"/castling_sound.wav")))
 
     def reset(self):
         self.indecesOfAvailableMovements = []
@@ -89,14 +97,12 @@ class ChessGI:
         self.pieceImages = []
         names = ["rook", "knight", "bishop", "queen", "king", "pawn"]
         color = "white"
-        for i in range(2):
+        for _ in range(2):
             for name in names:
-                # C:\\Users\pablo\Desktop\Pablo\Proyectos Python\
-                root = "chess_sprites/"
-                # root = absPath + "Chess_byPGM\sprites_Ajedrez (paint 3D)/"
-                root += color + "_" + name
-                root += "_sticker.png"
-                image = pygame.image.load(root)
+                path = dir_/chess_sprites_dir
+                fname = color + "_" + name
+                fname += "_sticker.png"
+                image = pygame.image.load((path/fname).open())
                 image = pygame.transform.scale(image, [self.squareSide, self.squareSide])
                 self.pieceImages.append(image)     
             color = "black"
