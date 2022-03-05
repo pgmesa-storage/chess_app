@@ -2,6 +2,12 @@
 
 set batch_file=chess.bat
 
+set venv_name=.\..\..\.venv
+if exist "%venv_name%" (
+    echo Deleting virtualenv...
+    rmdir /s /q "%venv_name%" > nul
+)
+
 echo Eliminando global batch file '%batch_file%'...
 call .global.bat --uninstall %batch_file%
 @REM Puesto que despues de dr privilegios, se vuelve a ejecutar .global.bat, este archivo y .global se ejecutan

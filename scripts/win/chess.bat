@@ -2,4 +2,4 @@
 
 set code_path=#PATH#
 
-py "%code_path%\chess_app.py" %*
+"%code_path%\.venv\Scripts\python.exe" "%code_path%\chess_app.py" %*
