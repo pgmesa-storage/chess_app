@@ -11,7 +11,7 @@ In game board image      |  Enemy king in check
 :-------------------------:|:-------------------------:
 ![Board Image](/assets/board-available-moves.png) | ![Check Image](/assets/check.png) 
 
-In the './scripts' directory there are some scripts to install-uninstall in Windows and Posix the project globally (add a chess executable file to PATH and install requirements in a virtual environment), so that you only need to type 'chess' in a terminal to open the game.
+In the './scripts' directory there are some scripts to install-uninstall the project globally in Windows (add a chess.bat executable file to PATH and install requirements in a virtual environment), so that you only need to type 'chess' in a terminal to open the game.
 
 [INFO]
 This project also has implmented the RSA public_key exchange between the clients through the sever in case you want to add user profile features with personal information that you want to be encrypted, but it is not used in the project because there is no personal information to hide. 
