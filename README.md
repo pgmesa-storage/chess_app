@@ -11,16 +11,6 @@ In game board image      |  Enemy king in check
 :-------------------------:|:-------------------------:
 ![Board Image](/assets/board-available-moves.png) | ![Check Image](/assets/check.png) 
 
-I have prepared other 2 branches 'server' and 'client' with the necessary code and a short README of how to run each one. The idea is to download the code with:
-```
-git clone --branch server https://github.com/pgmesa/chess_app chess-server
-```
-or 
-```
-git clone --branch client https://github.com/pgmesa/chess_app chess-client
-```
-and then create your '.env.json' file following the '.env_example.json'. When done, you could send your friends the client configured (e.g. in a .zip file) with the server password and where to connect to establish connection with them. 
-
 [INFO]
 This project also has implmented the RSA public_key exchange between the clients through the sever in case you want to add user profile features with personal information that you want to be encrypted, but it is not used in the project because there is no personal information to hide. 
 ## How to execute
@@ -66,12 +56,15 @@ Make an easy test in localhost:
 4. Play a game against yourself
 
 To deploy the code in a server with the intention to play with someone over the internet:
-1. Move the 'server.py' file to your online server (AWS, Azure, Google Cloud...)
+1. Clone the 'server' branch into your online server (AWS, Azure, Google Cloud...)
+```
+git clone --branch server https://github.com/pgmesa/chess_app chess-server
+```
 2. Create the '.env.json' file in the same directory as the file and change the variables to fit your server (remember to open the server port you specify in the '.env.json' file before you run the program)
 3. Run the 'server.py' file
-4. Create the '.env.json' file for the 'client.py' (the password must be the same as the one in the server '.env.json' file)
-5. Tell your friend to do the same as you
-5. Both run the 'client.py' file. One should create a room and the other must connect to that room.
+4. Clone the main branch and create the '.env.json' file in the directory of the project (the password must be the same as the one in the server '.env.json' file)
+5. Tell your friend to do step 3
+5. Both run the 'chess_app.py' file and select the online mode. One should create a room and the other must connect to that room.
 6. Play a game and enjoy
 
 
