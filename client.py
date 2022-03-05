@@ -1,10 +1,11 @@
 
 import os
+import pickle
 import socket
 from threading import Thread
 from pathlib import Path
-from random import choice
 
+from classes.chessPiece_class import ChessPiece
 from crypt_utilities.asymmetric import (
     generate_rsa_key_pairs, load_pem_private_key, load_pem_public_key, rsa_encrypt, rsa_decrypt,
     serialize_pem_public_key, serialization, RSAPublicKey
@@ -43,6 +44,7 @@ class ChessClient(Thread):
         self.game_status = None
         self.team = None; self.enemy_team = None
         self.enemy_move = None
+        self.turn = "white"; self.move_sent = False
         self.kill = False
         
     def is_enemy_move_recvd(self) -> bool:
@@ -70,7 +72,7 @@ class ChessClient(Thread):
         
     def send(self, msg:bytes, public_key:RSAPublicKey=None) -> None:
         if public_key is not None:
-            msg = rsa_encrypt(msg.encode(), public_key)
+            msg = rsa_encrypt(msg, public_key)
         self.client_socket.sendall(msg)
     
     def recv(self, size:int=1024) -> bytes:
@@ -79,6 +81,26 @@ class ChessClient(Thread):
             response = rsa_decrypt(response, private_key)
         except: pass
         return response
+    
+#     # -----------------------------------------------------------------------------------    
+    def send_move(self, move):
+        """self.move variable should be loaded first"""
+        dumped_move = pickle.dumps(move)
+        self.send(dumped_move)
+        self.move = None
+        self.move_sent = True
+    
+    def recv_move(self):
+        move = self.recv(size=40960)
+        if not move:
+            self.connection = False
+            return
+        self.enemy_move = pickle.loads(move)
+        
+    def read_enemy_move(self) -> tuple[ChessPiece, tuple[int,int]]:
+        enemy_move = self.enemy_move
+        self.enemy_move = None
+        return enemy_move
         
     def run(self):
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -122,16 +144,12 @@ class ChessClient(Thread):
                 print(f"Your room-id is: '{self.room_id}'")
                 print("Waiting for player connection...")
                 connection_outcome = int(self.recv().decode()) 
-                self.send(SUCCESS.encode())
+                self.send(str(SUCCESS).encode())
             if self.action == 1:
                 while self.room_id is None:
                     if self.kill: return
                 self.send(str.encode(self.room_id))
                 connection_outcome = int(self.recv().decode()) 
-            
-            def valid_msg(msg:str) -> bool:
-                if msg != "": return True
-                return False
             
             if connection_outcome == SUCCESS:
                 # Send the user name
@@ -143,35 +161,26 @@ class ChessClient(Thread):
                 self.send(pk_dumped)
                 # recv other client public key
                 pk_other_client_dumped = self.recv(40960)
-                pk_other_client = serialization.load_pem_public_key(pk_other_client_dumped)
-                # Radomly select the teams (the one who created the room)
-                if self.action == 0:
-                    self.team = choice(teams)
-                    if teams.index(self.team) == 1:
-                        self.enemy_team = teams[0]
-                    else:
-                        self.enemy_team = teams[1]
-                    self.send(self.enemy_team.encode(), public_key=pk_other_client)
-                if self.action == 1:
-                    self.team = self.recv().decode()
-                print(f"[%] Connection Succeed, connected with '{self.enemy_name}'")
+                public_key_client2 = serialization.load_pem_public_key(pk_other_client_dumped)
+                # Get the random selected team
+                print("Getting assignated team...")
+                self.team = self.recv().decode()
+                if self.team == 'black':
+                    self.enemy_team = 'white'
+                else:
+                    self.enemy_team = 'black'
+                print(f"[%] Connection succeed, connected with '{self.enemy_name}' (team={self.team})")
                 self.game_status = SUCCESS
-                ...
                 while True:
                     if self.kill: return
-                # ------
-                while True:
-                    print(f"Waiting for '{self.enemy_name}' to respond...")
-                    recv_msg = self.client_socket.recv(1024)
-                    if not recv_msg: break
-                    decrp_msg = rsa_decrypt(recv_msg, private_key).decode()
-                    print(f"+ '{self.enemy_name}' says:", decrp_msg)
-                    while True:
-                        msg = str(input(f"=> Write your msg here to '{self.enemy_name}': "))
-                        if valid_msg(msg): break
-                        print("[!] Can't send void msg")
-                    encrp_msg = rsa_encrypt(msg.encode(), pk_other_client)
-                    self.client_socket.send(encrp_msg)  
+                    if self.turn == self.team:
+                        while self.room_id is None:
+                            if not self.move_sent: return
+                        self.turn = self.enemy_team
+                        self.move_sent = False
+                    else:
+                        self.recv_move()
+                        self.turn = self.team  
             elif connection_outcome == FAIL:
                 self.game_status = FAIL
                 print("[!] Connection Failed")
@@ -182,15 +191,3 @@ class ChessClient(Thread):
         print("[%] Closing connection...")
         self.kill = True
         self.client_socket.close()
-       
-# client = ChatClient()
-# client.start()
-# try:
-#     while client.is_alive(): pass
-# except KeyboardInterrupt: pass
-# finally:
-#     print("[%] Closing client...")
-#     client.close()
-#     #sys.stdout = open(os.devnull, 'w')
-#     pid = os.getpid()
-#     os.kill(pid,9)

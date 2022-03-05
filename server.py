@@ -9,6 +9,7 @@ import socket
 import datetime as dt
 import random, string
 from pathlib import Path
+from random import choice
 from threading import Thread, Lock, Event
 
 dir_ = Path(__file__).parent.resolve()
@@ -73,15 +74,17 @@ stats_squema = {
     "visits": 0,
     "active-threads": 0,
     "rooms": {"num": 0, "ids":[]},
-    "active-chats": {"num": 0, "ids":[]}
+    "active-games": {"num": 0, "ids":[]}
 }
 
 exit_event = Event()
 
 # Communication agreements
 SUCCESS = "0"; FAIL = "1"
+
+teams = ["black", "white"]
  
-class SocketListener(Thread):
+class ChessServer(Thread):
     def run(self):
         self.num_connections = 0; self.threads = []
         self.rooms = {}; self.active_rooms = []
@@ -173,7 +176,7 @@ class SocketListener(Thread):
             stats['visits'] = self.num_connections
             stats['active-threads'] = active_threads
             stats['rooms'] = {"num": len(self.rooms), "ids": list(self.rooms.keys())}
-            stats['active-chats'] = {"num": len(self.active_rooms), "ids": self.active_rooms}
+            stats['active-games'] = {"num": len(self.active_rooms), "ids": self.active_rooms}
         self.lock.acquire()
         try:
             with open(stats_path, 'w') as file:
@@ -223,7 +226,7 @@ class SocketListener(Thread):
             if data == "0":
                 room_id = self._generate_id()
                 log(f"Creating room with id '{room_id}'")
-                self.create_chat(room_id, socket_connection)
+                self.create_game(room_id, socket_connection)
             else:
                 room_id = data
                 log(f"Joining room '{room_id}'")
@@ -237,7 +240,7 @@ class SocketListener(Thread):
         ran = ''.join(random.choices(string.ascii_uppercase + string.digits, k = size))    
         return str(ran)  
     
-    def create_chat(self, room_id:str, socket_connection):
+    def create_game(self, room_id:str, socket_connection):
         self.lock.acquire()
         try:
             self.rooms[room_id] = socket_connection
@@ -260,6 +263,8 @@ class SocketListener(Thread):
             if room_id in self.rooms:
                 first_connection = self.rooms[room_id]
                 reply = SUCCESS
+            else:
+                log(f"[!] '{room_id}' is not a valid room-id")
         except Exception as err:
             log(err)
         finally:
@@ -267,9 +272,9 @@ class SocketListener(Thread):
         second_connection.sendall(reply.encode())
         if first_connection is not None:
             first_connection.sendall(reply.encode())
-            self.start_chat(room_id, first_connection, second_connection)
+            self.start_game(room_id, first_connection, second_connection)
            
-    def start_chat(self, room_id, socket1, socket2):
+    def start_game(self, room_id, socket1, socket2):
         self.lock.acquire()
         self.rooms.pop(room_id)
         self.lock.release()
@@ -282,22 +287,37 @@ class SocketListener(Thread):
             # Send public key to each client
             pk1 = socket1.recv(40960); pk2 = socket2.recv(40960)
             socket1.send(pk2); socket2.send(pk1)
-            # Primero habla el que se une a la sala
+            # Decide clients teams
+            team1 = choice(teams)
+            if teams.index(team1) == 1:
+                team2 = teams[0]
+            else:
+                team2 = teams[1]
+            socket1.send(team1.encode()); socket2.send(team2.encode())
+            if team1 == 'white':
+                first_socket = socket1
+                second_socket = socket2
+            else:
+                first_socket = socket2
+                second_socket = socket1
             while True:
+                print(f"Game Started -> '{room_id}'")
                 # set to True event
                 if exit_event.is_set():
                     break
-                recv_msg_from2 = socket2.recv(2048)
-                if not recv_msg_from2: break
-                socket1.sendall(recv_msg_from2)
-                recv_msg_from1 = socket1.recv(2048)
-                if not recv_msg_from1: break
-                socket2.sendall(recv_msg_from1)
+                # Mov1
+                move1 = first_socket.recv(40960)
+                if not move1: break
+                second_socket.sendall(move1)
+                # Mov2 and repeat
+                move2 = second_socket.recv(40960)
+                if not move2: break
+                first_socket.sendall(move2)
         except socket.error: pass
         finally:
             log(f"[!] Closing connection in room '{room_id}'")
             self.active_rooms.remove(room_id)
-            log(f"Active Chat Rooms: {len(self.active_rooms)}")
+            log(f"Active Game Rooms: {len(self.active_rooms)}")
             socket1.close(); socket2.close()
     
     def close(self):
@@ -322,7 +342,7 @@ if "reset" in sys.argv:
     exit()
         
 try:
-    sl = SocketListener()
+    sl = ChessServer()
     sl.start()
     log('-> Socket is listening, press any ctrl-c to abort...')
     while sl.is_alive(): pass

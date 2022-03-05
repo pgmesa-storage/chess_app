@@ -3,8 +3,6 @@ import os
 import json
 import time
 import pygame
-import pickle
-import socket
 import logging
 from pathlib import Path
 from random import choice
@@ -13,6 +11,7 @@ from chessModule import *
 from client import FAIL, SUCCESS, ChessClient
 from classes.chessGI_class import ChessGI
 from classes.chessAI_class import ChessAI
+from classes.inputs import InputBox
 
 dir_ = Path(__file__).parent.resolve()
 env_path = dir_/'.env.json'
@@ -49,10 +48,11 @@ PORT = 9999
 
 # --------------------------------------------------------------------------
 # ---- Funcion para configurar la pantalla una vez se reajusta el tamaño ---
-def configureScreen(gi,size):
+def configureScreen(gi,size, update_board=True):
     screen = pygame.display.set_mode(size, pygame.RESIZABLE)
-    gi.setScreen(screen)
-    gi.updateBoardOnScreen()
+    if update_board:
+        gi.setScreen(screen)
+        gi.updateBoardOnScreen()
 # ------------------------------------------------------------
 # ---- Funciones para mostrar texto en la interfaz grafica ---
 
@@ -64,6 +64,16 @@ def calcDisplayOfOption(numOptions, screenHeight):
     for i in range(numOptions):
         centralPosOfRect = button_group_height*((1/2)+i)/numOptions + reduc/2
         yield centralPosOfRect
+        
+def showInput(screen, order:int, width=140, height=32) -> InputBox:
+    posGenerator = calcDisplayOfOption(order, gi.screen.get_height())
+    for _ in range(order-1):
+        next(posGenerator) # Queremos el ultimo solo
+    
+    box = InputBox((screenWidth/2) - width, next(posGenerator), width, height)
+    box.draw(screen)
+    
+    return box
 
 def showOptions (gi):
     screenHeight = gi.screen.get_height()
@@ -111,9 +121,12 @@ def setPositionOnBoard(strpos,board,invert):
             else:
                 gi.boardMatrix[row][colum] = ChessPiece(c,(row,colum),invert)
                 colum += 1  
+
+def invert_move(move) -> tuple[int,int]:
+    newMove = (7 - move[0],7 - move[1])
+    return newMove
 # ------------------------------------------------------------
 # -------- Funciones para el desarrollo de la partida --------
-
 def getTurnOfTeam(gameMoves):
     if len(gameMoves)%2 == 0:
         return"white"
@@ -151,22 +164,7 @@ def waitRemainingTime(t0, seconds):
     dif = tf-t0
     if dif >= seconds: return
     else: time.sleep(seconds-dif)
-
-# ---- Funcion para el traspaso de info entre sockets (modo online 2 jugadores ------
-# -----------------------------------------------------------------------------------
-def sendMove(piece,move,sock):
-    info = (piece,move)
-    content = pickle.dumps(info)
-    sock.sendall(content)
-    
-def recieveMove(sock):
-    content = sock.recv(40960)
-    return pickle.loads(content)
-
-def invertMove(move):
-    newMove = (7 - move[0],7 - move[1])
-    return newMove
-        
+  
 # ----- Funciones para definir los ciclos de ejecucion de cada modo de juego ------  
 # ---------------------------------------------------------------------------------      
 def practice_mode(gi,logger):
@@ -329,7 +327,7 @@ def online_mode(gi, logger):
                 return
             if event.type == pygame.VIDEORESIZE:
                 size = (event.w, event.h)
-                configureScreen(gi,size)
+                configureScreen(gi,size, update_board=False)
         if not client.is_connected() and client.is_alive():
             pass
         else:
@@ -338,9 +336,10 @@ def online_mode(gi, logger):
             else:
                 screen.fill(GRAY)
                 gi.showText("[!] Client failed to connect to the server", WHITE, GRAY, screenWidth/2, screenHeight/2,40, True)
+        clock.tick(60)
         pygame.display.update()
     # ------ Elegir entre crear o unirse a partida
-    game = False; chosen = False
+    game = False; chosen = False; room_id = None; outcome_decided = False; last_msg = None
     while not game:
         # Actualizacion grafica
         screenWidth = gi.screen.get_width()
@@ -356,7 +355,15 @@ def online_mode(gi, logger):
                 return
             if event.type == pygame.VIDEORESIZE:
                 size = (event.w, event.h)
-                configureScreen(gi,size)
+                configureScreen(gi,size, update_board=False)
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN and 'text_box' in locals():
+                room_id = text_box.text
+                client.set_room_id(room_id)
+                screen.fill(GRAY)
+                params = (f"Joining room with id '{room_id}'...",
+                            WHITE, GRAY, screenWidth/2, screenHeight/2 , 40, True)
+                gi.showText(*params)
+                last_msg = (gi.showText, params)
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if rect1.collidepoint(pygame.mouse.get_pos()):
                     chosen = True
@@ -364,30 +371,44 @@ def online_mode(gi, logger):
                     # Wait until the room_id variable is loaded
                     while client.room_id is None: pass
                     screen.fill(GRAY)
-                    gi.showText(f"Waiting for a player to join the room... (ID: '{client.room_id}')",
+                    params = (f"Waiting for a player to join the room... (ID: '{client.room_id}')",
                             WHITE, GRAY, screenWidth/2, screenHeight/2 , 40, True)
+                    gi.showText(*params)
+                    last_msg = (gi.showText, params)
                 elif rect2.collidepoint(pygame.mouse.get_pos()):
                     chosen = True
                     client.set_action(1)
                     # Input del ID
-                    screen.fill(GRAY)
-                    ...
-                    room_id = ...
-                    client.set_room_id(room_id)
-                    screen.fill(GRAY)
-                    gi.showText(f"Join room with id '{room_id}'...",
-                            WHITE, GRAY, screenWidth/2, screenHeight/2 , 40, True)
-            if client.game_status == SUCCESS:
-                logger.info(" Iniciando partida")
-                screen.fill(GRAY)
-                gi.showText(f"Conexion establecida con '{client.enemy_name}' - myTeam: '{client.team}'",WHITE, GRAY, screenWidth/2, screenHeight/2,40, True)
-                # game = True
-            elif client.game_status == FAIL:
-                logger.info(" [!] Fallo al iniciar la partida")
-                msg = "[!] Connection with client failed, could not start the game"
-                screen.fill(GRAY)
-                gi.showText(msg,WHITE, GRAY, screenWidth/2, screenHeight/2,40, True)
-            pygame.display.update()
+                    text_box = showInput(screen, 2)
+            # Vemos si han escrito en el input
+            if "text_box" in locals():
+                text_box.handle_event(event)
+        if last_msg is not None:
+            screen.fill(GRAY)
+            last_msg[0](*last_msg[1])
+        # Vemos si han escrito en el input
+        if "text_box" in locals() and room_id is None:
+            screen.fill(GRAY)
+            posGenerator = calcDisplayOfOption(1, gi.screen.get_height())
+            gi.showText(f"Introduce the id of the room you want to join",WHITE, GRAY, screenWidth/2, next(posGenerator), 40, True)
+            # Vemos si hay que actualizar el tamaño
+            text_box.update()
+            # Refrescamos el render del inputbox
+            text_box.draw(screen)
+        if client.game_status == SUCCESS:
+            if not outcome_decided:
+                print("[%] Iniciando partida")
+            game = True
+            outcome_decided = True
+        elif client.game_status == FAIL:
+            if not outcome_decided:
+                print("[!] Fallo al iniciar la partida")
+            msg = "[!] Connection with client failed, could not start the game"
+            screen.fill(GRAY)
+            gi.showText(msg,WHITE, GRAY, screenWidth/2, screenHeight/2,40, True)
+            outcome_decided = True
+        clock.tick(60)
+        pygame.display.update()
                 
     # -------------------------------------
     # Encapsula las actualizaciones de variables y checkeos necesarios tras realizar un movimiento
@@ -404,15 +425,19 @@ def online_mode(gi, logger):
         if END:
             logger.info(f" Fin de la partida, ganador -> {possibleWinner}")
             logger.info(" Conexion Terminada")
-            sock.close()
+            client.close()
         return END, dueTo
-        
+    myTeam = client.team
     if myTeam == "black":
         initialPos = "RNBKQBNR/PPPPPPPP/8/8/8/8/pppppppp/rnbkqbnr"
         setPositionOnBoard(initialPos, gi.boardMatrix, True)
     else:
         setPositionOnBoard(initialPos, gi.boardMatrix, False)
     while not close:
+        if not client.connection:
+            client.close()
+            print("[!] The other player cancelled the game")
+            return
         # Actualizacion de tablero
         screen.fill(GRAY)
         gi.updateBoardOnScreen()
@@ -428,52 +453,50 @@ def online_mode(gi, logger):
                 image = gi.getPieceImage(gi.selectedPiece.char)
                 mousePos = pygame.mouse.get_pos()
                 screen.blit(image, (mousePos[0]-gi.squareSide/2, mousePos[1]-gi.squareSide/2)) 
-        pygame.display.update()
         
         if not myTeam == getTurnOfTeam(gameMoves) and not END:
-            logger.info(f" A la espera de que responda el enemigo ({enemyTeam})")       
-            # thread = FreezeAvoider()
-            # thread.run()
-            recv = recieveMove(sock)
-            # thread.kill()
-            gi.selectedPiece = recv[0]
-            END, dueTo = move(recv[1])       
-            logger.info(" Jugada recibida")
-        else:
-            #--- Bucle principal de eventos
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT: 
-                    client.close()
-                    close = True
-                if event.type == pygame.VIDEORESIZE:
-                    size = (event.w, event.h)
-                    configureScreen(gi,size)
-                if event.type == pygame.MOUSEBUTTONDOWN and not END:
-                    clickedSquare = gi.getSquare(pygame.mouse.get_pos())
-                    # Miro a ver si he pinchado dentro del tablero
-                    if clickedSquare == None: 
-                        continue
-                    # Si no tengo una pieza seleccionada la selecciono 
-                    if gi.selectedPiece == None:
-                        p = gi.boardMatrix[clickedSquare[0]][clickedSquare[1]]
-                        teamTurn = getTurnOfTeam(gameMoves)
-                        if teamTurn == myTeam and p.team == myTeam:
-                            t0 = time.time()
-                            gi.takePieceAt(clickedSquare)
-                            logger.debug(" takePiece time: %f",time.time() - t0)      
-                    # Tengo ya una pieza seleccionada, miro si como, la dejo en su sitio o la muevo a otra casilla valida
+            gi.showText(f"Waiting '{client.enemy_team}'s response", REAL_BLACK, None, screenWidth/2, screenHeight/2, 20, False)
+            enemy_move = client.read_enemy_move()
+            if enemy_move is not None:
+                gi.selectedPiece = enemy_move[0]
+                END, dueTo = move(enemy_move[1])       
+                logger.info(" Jugada recibida")
+       
+        #--- Bucle principal de eventos
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT: 
+                client.close()
+                close = True
+            if event.type == pygame.VIDEORESIZE:
+                size = (event.w, event.h)
+                configureScreen(gi,size)
+            if event.type == pygame.MOUSEBUTTONDOWN and not END and myTeam == getTurnOfTeam(gameMoves):
+                clickedSquare = gi.getSquare(pygame.mouse.get_pos())
+                # Miro a ver si he pinchado dentro del tablero
+                if clickedSquare == None: 
+                    continue
+                # Si no tengo una pieza seleccionada la selecciono 
+                if gi.selectedPiece == None:
+                    p = gi.boardMatrix[clickedSquare[0]][clickedSquare[1]]
+                    teamTurn = getTurnOfTeam(gameMoves)
+                    if teamTurn == myTeam and p.team == myTeam:
+                        t0 = time.time()
+                        gi.takePieceAt(clickedSquare)
+                        logger.debug(" takePiece time: %f",time.time() - t0)      
+                # Tengo ya una pieza seleccionada, miro si como, la dejo en su sitio o la muevo a otra casilla valida
+                else:
+                    if gi.selectedPiece.square == clickedSquare:
+                        gi.dontMoveSelectedPice()
                     else:
-                        if gi.selectedPiece.square == clickedSquare:
-                            gi.dontMoveSelectedPice()
-                        else:
-                            if evalMove(gi.selectedPiece,clickedSquare):
-                                logger.debug(f" {gi.selectedPiece.team} Movement: [ {gi.selectedPiece.char} , {clickedSquare} ]")
-                                logger.info(" Enviando info del mov...")
-                                mov = invertMove(clickedSquare)
-                                copySP = copy.deepcopy(gi.selectedPiece)
-                                copySP.square = invertMove(copySP.square)
-                                sendMove(copySP,mov,sock)
-                                END, dueTo = move(clickedSquare)                                                                                                              
+                        if evalMove(gi.selectedPiece,clickedSquare):
+                            logger.debug(f" {gi.selectedPiece.team} Movement: [ {gi.selectedPiece.char} , {clickedSquare} ]")
+                            logger.info(" Enviando info del mov...")
+                            mov = invert_move(clickedSquare)
+                            copySP = copy.deepcopy(gi.selectedPiece)
+                            copySP.square = invert_move(copySP.square)        
+                            client.send_move((copySP,mov))
+                            END, dueTo = move(clickedSquare)     
+        pygame.display.update()                                                                                                         
         # Se establecen el frame rate (fps) 
         clock.tick(60)
 
