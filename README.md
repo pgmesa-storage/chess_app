@@ -5,8 +5,6 @@ All the rules of the chess are successfully implemented but with bad code style,
 1. Moves that checks the enemy king
 2. Moves that captures an enemy piece
 
-This project also has implmented the RSA public_key exchange between the clients through the sever in case you want to add user profile features with personal information that you want to be encrypted, but it is not used in the project because there is no personal information to hide. 
-
 I really encourage you to play and deploy your own server for creating a basic online chess app on the internet (read sections below for this step)
 
 In game board image      |  Enemy king in check
@@ -22,6 +20,9 @@ or
 git clone --branch client https://github.com/pgmesa/chess_app chess-client
 ```
 and then create your '.env.json' file following the '.env_example.json'. When done, you could send your friends the client configured (e.g. in a .zip file) with the server password and where to connect to establish connection with them. 
+
+[INFO]
+This project also has implmented the RSA public_key exchange between the clients through the sever in case you want to add user profile features with personal information that you want to be encrypted, but it is not used in the project because there is no personal information to hide. 
 ## How to execute
 First install external dependencies with
 ```
