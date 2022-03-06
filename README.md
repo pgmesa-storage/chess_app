@@ -69,5 +69,5 @@ git clone --branch server https://github.com/pgmesa/chess-app chess-server
 5. Both run the 'chess_app.py' file and select the online mode. One should create a room and the other must connect to that room.
 6. Play a game and enjoy
 
-
+[INFO] Use the Dockerfile to create an image of the chess-server to run with docker
 
