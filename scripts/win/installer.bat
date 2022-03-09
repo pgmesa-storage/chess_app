@@ -1,7 +1,7 @@
 @echo off
 
 @REM Ver si python esta instalado
-call py --version > nul
+call python --version > nul
 if '%errorlevel%' NEQ '0' (
     echo ERROR: Python is not installed, please install it before continuing
     goto failure
