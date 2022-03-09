@@ -25,7 +25,7 @@ if '%errorlevel%' NEQ '0' (
 set venv_name=.\..\..\.venv
 if not exist "%venv_name%" (
     echo Creando entorno virtual '%venv_name%'...
-    call py -m virtualenv %venv_name%
+    call python -m virtualenv %venv_name%
     if '%errorlevel%' NEQ '0' (
         echo [!] virtualenv is not installed, do you have more than one python installed?...
         goto failure
@@ -39,7 +39,7 @@ if not exist "%venv_name%" (
 @REM Move file to System32
 set batch_file=chess.bat
 echo Instalando globalmente el archivo '%batch_file%'...
-call py .\..\.path.py --replace
+call python .\..\.path.py --replace
 if %errorlevel% NEQ 0 ( 
     echo [!] Instalation failed
     goto failure 
@@ -50,7 +50,7 @@ call .global.bat --install %batch_file%
 @REM a la vez, por lo que si se ejecuta esto antes que el otro saldra una info erronea, por eso el timeout que solo
 @REM se puede romper con control-c
 timeout /t 1 /nobreak > nul
-call py .\..\.path.py --reset
+call python .\..\.path.py --reset
 
 if exist "C:\Windows\System32\%batch_file%" (
     echo SUCCESS: Aplicacion instalada globalmente con exito 
